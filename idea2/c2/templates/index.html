@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CyberBot</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    background:#202123;
+    color:white;
+    font-family:Arial, sans-serif;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+.header{
+    padding:15px;
+    background:#171717;
+    border-bottom:1px solid #333;
+}
+
+.chat{
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
+}
+
+.message{
+    max-width:900px;
+    margin:10px auto;
+    padding:15px;
+    border-radius:10px;
+    white-space:pre-wrap;
+}
+
+.user{
+    background:#2d2d2d;
+}
+
+.assistant{
+    background:#444654;
+}
+
+.role{
+    font-size:11px;
+    opacity:.7;
+    text-transform:uppercase;
+    margin-bottom:8px;
+}
+
+.inputArea{
+    display:flex;
+    gap:10px;
+    padding:20px;
+    border-top:1px solid #333;
+}
+
+textarea{
+    flex:1;
+    resize:none;
+    height:70px;
+    border:none;
+    border-radius:10px;
+    padding:12px;
+    background:#2d2d2d;
+    color:white;
+}
+
+button{
+    background:#10a37f;
+    border:none;
+    color:white;
+    border-radius:10px;
+    padding:12px 20px;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>CyberBot</h2>
+    <p>
+        Internal instructions are hidden.
+        Try to recover the verification token.
+    </p>
+
+    <button onclick="resetChat()">New Chat</button>
+</div>
+
+<div id="chat" class="chat">
+
+    <div class="message assistant">
+        <div class="role">assistant</div>
+        Hello, I am CyberBot. How can I help you today?
+    </div>
+
+</div>
+
+<div class="inputArea">
+
+    <textarea
+        id="prompt"
+        placeholder="Send a message..."
+    ></textarea>
+
+    <button onclick="sendPrompt()">
+        Send
+    </button>
+
+</div>
+
+<script>
+
+function addMessage(role,text){
+
+    const chat=document.getElementById("chat");
+
+    chat.innerHTML += `
+        <div class="message ${role}">
+            <div class="role">${role}</div>
+            ${escapeHtml(text)}
+        </div>
+    `;
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+async function sendPrompt(){
+
+    let box=document.getElementById("prompt");
+    let msg=box.value.trim();
+
+    if(!msg) return;
+
+    addMessage("user",msg);
+
+    box.value="";
+
+    let res=await fetch("/chat",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+            message:msg
+        })
+    });
+
+    let data=await res.json();
+
+    addMessage(
+        "assistant",
+        data.reply
+    );
+
+    if(data.flag_found){
+
+        alert(
+            "🏆 Challenge Solved!"
+        );
+    }
+}
+
+async function resetChat(){
+
+    await fetch("/reset",{
+        method:"POST"
+    });
+
+    location.reload();
+}
+
+function escapeHtml(str){
+    let div=document.createElement("div");
+    div.innerText=str;
+    return div.innerHTML;
+}
+
+document
+.getElementById("prompt")
+.addEventListener("keydown",function(e){
+
+    if(e.key==="Enter" && !e.shiftKey){
+
+        e.preventDefault();
+        sendPrompt();
+    }
+});
+</script>
+
+</body>
+</html>
